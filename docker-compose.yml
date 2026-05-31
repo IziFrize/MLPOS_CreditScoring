@@ -1,0 +1,46 @@
+services:
+  mlpos-credit-scoring:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow-ui:5000
+    depends_on:
+      mlflow-ui:
+        condition: service_healthy
+    command: python src/train.py
+
+  mlflow-ui:
+    build: .
+    volumes:
+      - mlflow-db:/mlflow/db
+      - mlflow-artifacts:/mlflow/artifacts
+    ports:
+      - "5000:5000"
+    command:
+      - mlflow
+      - server
+      - --backend-store-uri
+      - sqlite:////mlflow/db/mlflow.db
+      - --artifacts-destination
+      - /mlflow/artifacts
+      - --host
+      - 0.0.0.0
+      - --allowed-hosts
+      - mlflow-ui:5000,localhost:*
+      - --port
+      - "5000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen("http://localhost:5000/health").read()
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  mlflow-db:
+  mlflow-artifacts:

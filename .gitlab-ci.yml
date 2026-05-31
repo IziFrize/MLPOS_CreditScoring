@@ -1,0 +1,32 @@
+stages:
+  - test
+  - train
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+
+before_script:
+  - python --version
+  - pip install --upgrade pip
+  - pip install -r requirements.txt
+
+test_python:
+  stage: test
+  script:
+    - python -m py_compile src/preprocessing.py src/features.py src/train.py src/evaluate.py src/predict.py
+    - pytest tests/
+
+train_model:
+  stage: train
+  script:
+    - python src/train.py
+  artifacts:
+    paths:
+      - models/
+      - reports/figures/
+      - data/processed/
+    expire_in: 1 week
